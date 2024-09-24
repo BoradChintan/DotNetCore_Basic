@@ -186,7 +186,7 @@
                                         <div class="message sent">
                                             <span style="font-size:10px ; color :aquamarine">@name</span>
                                             <p>@item.cb_name</p>
-                                            <span class="timestamp">10:06 AM</span>
+                                            <span class="timestamp">@item.createdon</span>
                                         </div>
                                     }
                                     else
@@ -194,7 +194,7 @@
                                         <div class="message received">
                                             <span style="font-size:10px ; color :grey">@item.userName</span>
                                             <p>@item.cb_name</p>
-                                            <span class="timestamp">10:05 AM</span>
+                                            <span class="timestamp">@item.createdon</span>
                                         </div>
                                         
                                     }
@@ -261,6 +261,7 @@
                 storeMessageToDatabase(messageText);
                 // Scroll to the bottom of the chat window
                 chatWindow.scrollTop = chatWindow.scrollHeight;
+                window.location.reload();
             }
         }
 
@@ -282,6 +283,7 @@
                     storeMessageToDatabase(messageText);
                     // Scroll to the bottom of the chat window
                     chatWindow.scrollTop = chatWindow.scrollHeight;
+                    window.location.reload();
                 }
 
             }
