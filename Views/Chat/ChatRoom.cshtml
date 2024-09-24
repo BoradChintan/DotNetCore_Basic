@@ -1,0 +1,291 @@
+﻿@using DotNETBasic.Models
+@model List<Message>
+
+
+@{
+    ViewData["Title"] = "ChatRoom";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}  
+
+@inject DotNETBasic.Services.DataverseService service
+
+@{
+    string userID;
+   string userIDGet =  service.GetSessionValue("userID");
+}
+
+@{
+    var usersClaims = User.Claims.ToList();
+    var name = "";
+    var email = User.Claims.FirstOrDefault(c => c.Type == "preferred_username").Value;
+
+    foreach(var claims in usersClaims)
+    {
+        if (claims.Type == "name" )
+        {
+            name = claims.Value;
+            break;
+        }
+    }
+
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+ <style>
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        height: 100vh;
+    }
+
+    .chat-container {
+        width: 50vw;
+        height: 75vh;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        margin : 0px auto;
+    }
+
+    .chat-header {
+        background-color: #007bff;
+        color: #fff;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .chat-window {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+        background-color: #e9ecef;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message {
+        padding: 10px;
+        border-radius: 15px;
+        margin-bottom: 10px;
+        max-width: 70%;
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        position: relative;
+    }
+
+        .message p {
+            margin: 0;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background-color: #f1f1f1;
+        }
+
+    .timestamp {
+        font-size: 10px;
+        margin-top: 5px;
+        align-self: flex-end;
+        opacity: 0.7;
+    }
+
+    .chat-input {
+        display: flex;
+        padding: 10px;
+        background-color: #fff;
+        border-top: 1px solid #ddd;
+    }
+
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+            .chat-input button:hover {
+                background-color: #0056b3;
+            }
+
+    /* Add this to ensure scrolling works correctly */
+    .chat-window::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .chat-window::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+    }
+
+    .chat-window::-webkit-scrollbar-track {
+        background-color: #f4f4f9;
+    }
+
+
+    /* Content area must fill remaining space between header and footer */
+    .content-wrapper-setter {
+        display: flex;
+        flex-grow: 1; /* Takes up remaining height */
+        overflow: hidden; /* Prevent internal scrolling */
+    }
+ </style>
+
+<div class="pagetitle">
+    <h3>Chat Room </h3>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home"><i class="bi bi-house-door"></i></a></li>
+            <li class="breadcrumb-item active">Chat Room</li>
+        </ol>
+    </nav>
+</div>
+<!-- End Page Title -->
+
+<section class="section dashboard ">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body"  style="width:100% !important">
+                    @* ######## *@
+                   <div class="" style="width:100% !important">
+                        <div class="chat-container">
+                            <div class="chat-header">
+                                <h2>Chatroom</h2>
+                            </div>
+                            <div class="chat-window" id="chatWindow">
+
+                                @foreach(var item in Model){
+                                    if (item.userName == name)
+                                    {
+                                        <div class="message sent">
+                                            <span style="font-size:10px ; color :aquamarine">@name</span>
+                                            <p>@item.cb_name</p>
+                                            <span class="timestamp">10:06 AM</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="message received">
+                                            <span style="font-size:10px ; color :grey">@item.userName</span>
+                                            <p>@item.cb_name</p>
+                                            <span class="timestamp">10:05 AM</span>
+                                        </div>
+                                        
+                                    }
+                                }
+                                
+                               
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="messageInput" placeholder="Type your message...">
+                                <button id="sendMessageBtn">Send</button>
+                            </div>
+                        </div>
+                   </div>
+
+                    @* ######## *@
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+ 
+
+@section Scripts {
+    <script>
+   
+        function storeMessageToDatabase(message) {  
+
+            // Make the AJAX call
+            $.ajax({
+                url: '/Chat/SendMessage',
+                type: 'POST',
+                contentType: 'application/json',
+                
+                data: JSON.stringify({
+                    "cb_name": message,
+                    "ownerid": "@userIDGet.ToString()"
+                }),
+                success: function (response) {
+
+                    if (response.success) {
+                        console.log('Data sent successfully:', response);
+                    } 
+
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    debugger;
+                    console.log('Error:', textStatus, errorThrown);
+                }
+            });
+        }
+        function GetMessageValue() {
+            const messageInput = document.getElementById('messageInput');
+            const messageText = messageInput.value.trim();
+
+            if (messageText) {
+                const chatWindow = document.getElementById('chatWindow');
+                const newMessage = document.createElement('div');
+                newMessage.classList.add('message', 'sent');
+                newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">${user}</span><p>${messageText}</p><span class="timestamp">${createdOn}</span>`;
+                chatWindow.appendChild(newMessage);
+                messageInput.value = '';
+
+                storeMessageToDatabase(messageText);
+                // Scroll to the bottom of the chat window
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        document.getElementById('sendMessageBtn').addEventListener('click', GetMessageValue);
+        const input = document.getElementById('messageInput'); 
+        input.addEventListener('keydown', function (event) {
+            // Check if the pressed key is Enter (key code 13)
+            if (event.key === 'Enter') {
+                const messageText = input.value.trim();
+
+                if (messageText) {
+                    const chatWindow = document.getElementById('chatWindow');
+                    const newMessage = document.createElement('div');
+                    newMessage.classList.add('message', 'sent');
+                    newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">@name</span><p>${messageText}</p><span class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                    chatWindow.appendChild(newMessage);
+                    input.value = '';
+
+                    storeMessageToDatabase(messageText);
+                    // Scroll to the bottom of the chat window
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }
+
+            }
+        });
+
+    </script>
+}

@@ -1,0 +1,126 @@
+﻿<style>
+    /* Add some styles for the weather box */
+    #weather-box {
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 400px;
+        background-color: #f0f8ff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        font-family: Arial, sans-serif;
+    }
+
+    h4 {
+        margin: 0;
+        color: #007bff;
+    }
+
+    p {
+        margin: 5px 0;
+    }
+
+    .condition {
+        font-weight: bold;
+        color: #dc3545; /* Red for alerts */
+    }
+
+    .clear {
+        color: #28a745; /* Green for clear weather */
+    }
+
+    .cloudy {
+        color: #6c757d; /* Grey for cloudy weather */
+    }
+
+    .rainy {
+        color: #007bff; /* Blue for rainy weather */
+    }
+</style>
+
+<div class="pagetitle">
+    <h3>Dashboard</h3>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index" asp-controller="Home"><i class="bi bi-house-door"></i></a></li>
+            <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2>Live Weather Updates</h2>
+
+                    <div id="weather-box">
+                        <div id="weather-updates">
+                            Connecting to WebSocket...
+                        </div>
+                    </div>
+
+                    <script>
+                        var socket = new WebSocket("wss://localhost:7188/ws");
+
+                        socket.onopen = function () {
+                            console.log("WebSocket connection established.");
+                        };
+
+                        socket.onmessage = function (event) {
+                            console.log("Message from server:", event.data);
+
+                            try {
+                                var weatherData = JSON.parse(event.data);
+
+                                // Determine the weather condition class
+                                var conditionClass = '';
+                                switch (weatherData.current.condition.code) {
+                                    case 1000: // Clear
+                                        conditionClass = 'clear';
+                                        break;
+                                    case 1003: // Partly Cloudy
+                                    case 1006: // Cloudy
+                                        conditionClass = 'cloudy';
+                                        break;
+                                    case 1009: // Overcast
+                                        conditionClass = 'cloudy';
+                                        break;
+                                    case 1180: // Light Rain
+                                    case 1183: // Moderate Rain
+                                        conditionClass = 'rainy';
+                                        break;
+                                    default:
+                                        conditionClass = '';
+                                }
+
+                                // Update the weather box with formatted data
+                                document.getElementById("weather-updates").innerHTML = `
+                                                            <h4>Current Weather in ${weatherData.location.name}, ${weatherData.location.region}</h4>
+                                                            <p class="condition ${conditionClass}">Condition: ${weatherData.current.condition.text}</p>
+                                                            <p>Temperature: ${weatherData.current.temp_c} °C (${weatherData.current.temp_f} °F)</p>
+                                                            <p>Humidity: ${weatherData.current.humidity}%</p>
+                                                            <p>Wind Speed: ${weatherData.current.wind_kph} kph (${weatherData.current.wind_mph} mph)</p>
+                                                            <p>Last Updated: ${weatherData.current.last_updated}</p>
+                                                            <img src="https:${weatherData.current.condition.icon}" alt="${weatherData.current.condition.text}">
+                                                        `;
+                            } catch (e) {
+                                console.error("Received non-JSON message:", event.data);
+                            }
+                        };
+
+                        socket.onerror = function (error) {
+                            console.error("WebSocket error:", error);
+                        };
+
+                        socket.onclose = function () {
+                            console.log("WebSocket connection closed.");
+                        };
+                    </script>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
