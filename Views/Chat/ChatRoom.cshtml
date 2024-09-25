@@ -181,20 +181,33 @@
                             <div class="chat-window" id="chatWindow">
 
                                 @foreach(var item in Model){
+                                    // Assume item.createdon is a DateTime in UTC
+                                    DateTime utcTime = item.createdon;
+                                    TimeZoneInfo indiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+                                    DateTime indiaTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, indiaTimeZone);
+
+                                    TimeSpan timeOfDay = indiaTime.TimeOfDay;
+
+                                    int hour = timeOfDay.Hours % 12;
+                                    hour = hour == 0 ? 12 : hour; // Convert 0 to 12 for 12-hour format
+
+                                    int minutes = timeOfDay.Minutes;
+                                    string amPm = indiaTime.Hour >= 12 ? "PM" : "AM";
+                                    string formattedTime = $"{hour:D2}:{minutes:D2} {amPm}";
                                     if (item.userName == name)
                                     {
                                         <div class="message sent">
                                             <span style="font-size:10px ; color :aquamarine">@name</span>
                                             <p>@item.cb_name</p>
-                                            <span class="timestamp">@item.createdon</span>
+                                            <span class="timestamp">@formattedTime</span>
                                         </div>
                                     }
                                     else
-                                    {
+                                    {  
                                         <div class="message received">
-                                            <span style="font-size:10px ; color :grey">@item.userName</span>
+                                            <span style="font-size:10px ; color :coral">@item.userName</span>
                                             <p>@item.cb_name</p>
-                                            <span class="timestamp">@item.createdon</span>
+                                            <span class="timestamp">@formattedTime</span>
                                         </div>
                                         
                                     }
@@ -220,55 +233,96 @@
 
 @section Scripts {
     <script>
-   
-        function storeMessageToDatabase(message) {  
 
-            // Make the AJAX call
-            $.ajax({
-                url: '/Chat/SendMessage',
-                type: 'POST',
-                contentType: 'application/json',
-                
-                data: JSON.stringify({
-                    "cb_name": message,
-                    "ownerid": "@userIDGet.ToString()"
-                }),
-                success: function (response) {
+        var socket1 = new WebSocket("wss://localhost:7188/chat/ws");
 
-                    if (response.success) {
-                        console.log('Data sent successfully:', response);
-                    } 
+      
 
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    debugger;
-                    console.log('Error:', textStatus, errorThrown);
+        socket1.onopen = function (event) {
+            console.log("WebSocket is open now. ABC");
+        };
+
+        socket1.onmessage = function (event) {
+            debugger;
+            const message = JSON.parse(event.data);
+
+            const chatWindow = document.getElementById('chatWindow');
+            const newMessage = document.createElement('div');
+
+            if (message.ownerid == "@userIDGet") {
+                newMessage.classList.add('message', 'sent');
+                newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">${message.userName}</span><p>${message.cb_name}</p><span class="timestamp">${message.createdon}</span>`;
+                chatWindow.appendChild(newMessage);
+
+            }
+            else { 
+                newMessage.classList.add('message', 'received');
+                newMessage.innerHTML = `<span style="font-size:10px ; color :coral">${message.userName}</span><p>${message.cb_name}</p><span class="timestamp">${message.createdon}</span>`;
+                chatWindow.appendChild(newMessage);
+            }
+            // Scroll to the bottom of the chat window
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        };
+
+        socket1.onerror = function (event1) {
+            console.log("event 1 : ", event1);
+            socket1.onclose = function (event) {
+
+                console.log("event  : ", event);
+                if (!event.wasClean) {
+                    console.error(`Connection closed abnormally: ${event.code} - ${event.reason}`);
+                    // Optionally implement reconnection logic here
+                } else {
+                    console.log(`Connection closed cleanly: ${event.code}`);
                 }
-            });
+            };
         }
+
+        
+
+        // Send a message to the server
+        function sendMessage(message ) {
+           
+            socket1.send(message);
+        }
+   
+
+        //////////  Socket part complete ////////////
+
+        function storeMessageToDatabase(message) {
+            var data = {
+                 
+                "cb_name": message,
+                "ownerid":"@userIDGet.ToString()",
+                "cb_chatmessageid"  : "00000000-0000-0000-0000-000000000000",
+                "userName" : "" ,
+                "createdon" :'@DateTime.UtcNow.ToString("yyyy-MM-ddThh:mm:ssZ")'
+                    };
+            debugger;
+            socket1.send(JSON.stringify(data));
+        }
+
         function GetMessageValue() {
             const messageInput = document.getElementById('messageInput');
             const messageText = messageInput.value.trim();
 
             if (messageText) {
-                const chatWindow = document.getElementById('chatWindow');
-                const newMessage = document.createElement('div');
-                newMessage.classList.add('message', 'sent');
-                newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">${user}</span><p>${messageText}</p><span class="timestamp">${createdOn}</span>`;
-                chatWindow.appendChild(newMessage);
+                // const chatWindow = document.getElementById('chatWindow');
+                // const newMessage = document.createElement('div');
+                // newMessage.classList.add('message', 'sent');
+                // newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">${user}</span><p>${messageText}</p><span class="timestamp">${createdOn}</span>`;
+                // chatWindow.appendChild(newMessage);
                 messageInput.value = '';
 
                 storeMessageToDatabase(messageText);
                 // Scroll to the bottom of the chat window
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-
-
-                document.getElementById('chatWindow').innerHTML = "";
-                window.location.reload();
             }
         }
 
         document.getElementById('sendMessageBtn').addEventListener('click', GetMessageValue);
+
+
         const input = document.getElementById('messageInput'); 
         input.addEventListener('keydown', function (event) {
             // Check if the pressed key is Enter (key code 13)
@@ -277,19 +331,19 @@
 
                 if (messageText) {
                     
-                    const chatWindow = document.getElementById('chatWindow');
-                    const newMessage = document.createElement('div');
-                    newMessage.classList.add('message', 'sent');
-                    newMessage.innerHTML = `<span style="font-size:10px ; color :aquamarine">@name</span><p>${messageText}</p><span class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
-                    chatWindow.appendChild(newMessage);
-                    input.value = '';
+                    // const chatWindow = document.getElementById('chatWindow');
+                    // const newMessage = document.createElement('div');
+                    // newMessage.classList.add('message', 'sent');
+                    // newMessage.innerHTML = `<span style="font-size:10px ; color : orrange">@name</span><p>${messageText}</p><span class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+                    // chatWindow.appendChild(newMessage);
+                    // input.value = '';
+
+                    // storeMessageToDatabase(messageText);
 
                     storeMessageToDatabase(messageText);
                     // Scroll to the bottom of the chat window
                     chatWindow.scrollTop = chatWindow.scrollHeight;
-
-                    document.getElementById('chatWindow').innerHTML = "";
-                    window.location.reload();
+                     
                 }
 
             }

@@ -12,10 +12,10 @@ namespace DotNETBasic.Services
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task HandleWebSocketAsync(WebSocket webSocket)
+        public async Task HandleWebSocketAsync(WebSocket weatherWebSocket)
         {
             Console.WriteLine("Fetching weather updates...");
-            while (webSocket.State == WebSocketState.Open)
+            while (weatherWebSocket.State == WebSocketState.Open)
             {
                 // Fetch the actual weather data
                 var weatherData = await GetWeatherData();
@@ -25,7 +25,7 @@ namespace DotNETBasic.Services
                 {
                     // Send weather data to the WebSocket client
                     var weatherBuffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(weatherData), 0, weatherData.Length);
-                    await webSocket.SendAsync(weatherBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
+                    await weatherWebSocket.SendAsync(weatherBuffer, WebSocketMessageType.Text, true, CancellationToken.None);
                 }
 
                 await Task.Delay(10000);

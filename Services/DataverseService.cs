@@ -38,6 +38,11 @@ namespace DotNETBasic.Services
             }
         }
 
+        //public string getUserName() {
+        //    var users = Users.
+        //    return "";
+        //}
+
         public string GetSessionValue(string key)
         {
             var session = _httpContextAccessor.HttpContext.Session;

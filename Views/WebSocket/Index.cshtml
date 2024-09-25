@@ -62,13 +62,13 @@
                     </div>
 
                     <script>
-                        var socket = new WebSocket("wss://localhost:7188/ws");
+                        var weatherWebSocket = new WebSocket("wss://localhost:7188/ws");
 
-                        socket.onopen = function () {
+                        weatherWebSocket.onopen = function () {
                             console.log("WebSocket connection established.");
                         };
 
-                        socket.onmessage = function (event) {
+                        weatherWebSocket.onmessage = function (event) {
                             console.log("Message from server:", event.data);
 
                             try {
@@ -110,11 +110,11 @@
                             }
                         };
 
-                        socket.onerror = function (error) {
+                        weatherWebSocket.onerror = function (error) {
                             console.error("WebSocket error:", error);
                         };
 
-                        socket.onclose = function () {
+                        weatherWebSocket.onclose = function () {
                             console.log("WebSocket connection closed.");
                         };
                     </script>
