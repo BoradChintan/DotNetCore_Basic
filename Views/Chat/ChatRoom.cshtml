@@ -233,8 +233,8 @@
 
 @section Scripts {
     <script>
-
-        var socket1 = new WebSocket("wss://localhost:7188/chat/ws");
+        const socketUrl = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/chat/ws`;
+        var socket1 = new WebSocket(socketUrl);
 
         socket1.onopen = function (event) {
             console.log("WebSocket is open now. ABC");

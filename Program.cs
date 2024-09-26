@@ -62,81 +62,82 @@ builder.Services.AddCors(options =>
     {
         builder.AllowAnyOrigin()
                .AllowAnyMethod()
-               .AllowAnyHeader();
+               .AllowAnyHeader()
+               .AllowCredentials();
     });
+    builder.Services.AddControllers();
+    builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+    var app = builder.Build();
+
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error/AccessDenied");
+        app.UseHsts();
+    }
+
+    // Apply session middleware
+    app.UseSession();
+    app.UseHttpsRedirection();
+    app.UseStaticFiles();
+    app.UseCors("CorsPolicy"); // Enable CORS
+
+    app.UseWebSockets();
+    app.Map("/ws", async context =>
+    {
+        Console.WriteLine("WebSocket request received.");
+        if (context.WebSockets.IsWebSocketRequest)
+        {
+            using var weatherWebSocket = await context.WebSockets.AcceptWebSocketAsync();
+            Console.WriteLine("WebSocket accepted.");
+
+            var webSocketService = app.Services.GetRequiredService<WebSocketService>();
+            await webSocketService.HandleWebSocketAsync(weatherWebSocket);
+        }
+        else
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            Console.WriteLine("Invalid WebSocket request.");
+        }
+    });
+
+    // New WebSocket for chat
+    app.Map("/chat/ws", async context =>
+    {
+        Console.WriteLine("Chat WebSocket request received.");
+        if (context.WebSockets.IsWebSocketRequest)
+        {
+            using var chatWebSocket = await context.WebSockets.AcceptWebSocketAsync();
+            Console.WriteLine("Chat WebSocket accepted.");
+
+            // Handle Chat WebSocket connection
+            var chatWebSocketService = app.Services.GetRequiredService<ChatService>();
+            await chatWebSocketService.HandleWebSocketAsync(chatWebSocket);
+        }
+        else
+        {
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            Console.WriteLine("Invalid Chat WebSocket request.");
+        }
+    });
+
+
+
+    app.UseRouting();
+
+    // Enable WebSockets
+    var webSocketOptions = new WebSocketOptions
+    {
+        KeepAliveInterval = TimeSpan.FromMinutes(5)
+    };
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+    app.MapRazorPages();
+
+    app.Run();
 });
-builder.Services.AddControllers();
-builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error/AccessDenied");
-    app.UseHsts();
-}
-
-// Apply session middleware
-app.UseSession();
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseCors("CorsPolicy"); // Enable CORS
-
-app.UseWebSockets();
-app.Map("/ws", async context =>
-{
-    Console.WriteLine("WebSocket request received.");
-    if (context.WebSockets.IsWebSocketRequest)
-    {
-        using var weatherWebSocket = await context.WebSockets.AcceptWebSocketAsync();
-        Console.WriteLine("WebSocket accepted.");
-
-        var webSocketService = app.Services.GetRequiredService<WebSocketService>();
-        await webSocketService.HandleWebSocketAsync(weatherWebSocket);
-    }
-    else
-    {
-        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-        Console.WriteLine("Invalid WebSocket request.");
-    }
-});
-
-// New WebSocket for chat
-app.Map("/chat/ws", async context =>
-{
-    Console.WriteLine("Chat WebSocket request received.");
-    if (context.WebSockets.IsWebSocketRequest)
-    {
-        using var chatWebSocket = await context.WebSockets.AcceptWebSocketAsync();
-        Console.WriteLine("Chat WebSocket accepted.");
-
-        // Handle Chat WebSocket connection
-        var chatWebSocketService = app.Services.GetRequiredService<ChatService>();
-        await chatWebSocketService.HandleWebSocketAsync(chatWebSocket);
-    }
-    else
-    {
-        context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
-        Console.WriteLine("Invalid Chat WebSocket request.");
-    }
-});
-
-
-
-app.UseRouting();
-
-// Enable WebSockets
-var webSocketOptions = new WebSocketOptions
-{
-    KeepAliveInterval = TimeSpan.FromMinutes(5)
-};
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-app.MapRazorPages();
-
-app.Run();
