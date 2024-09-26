@@ -28,8 +28,8 @@ namespace DotNETBasic.Services
 
         public void SetSessionValue(string key, string value)
         {
-            var session = _httpContextAccessor.HttpContext.Session;
-            session.SetString(key, value);
+            var session = _httpContextAccessor?.HttpContext?.Session;
+            session?.SetString(key, value);
 
             // Log all session keys and their values
             foreach (var sessionKey in session.Keys)
@@ -45,8 +45,9 @@ namespace DotNETBasic.Services
 
         public string GetSessionValue(string key)
         {
-            var session = _httpContextAccessor.HttpContext.Session;
-            return session.GetString(key);
+            var session = _httpContextAccessor?.HttpContext?.Session;
+            var val = session?.GetString(key);
+            return val;
         }
 
         public ServiceClient GetServiceClient()

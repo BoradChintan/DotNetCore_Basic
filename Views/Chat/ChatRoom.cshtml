@@ -293,7 +293,7 @@
             var data = {
                  
                 "cb_name": message,
-                "ownerid":"@userIDGet.ToString()",
+                "ownerid":"@userIDGet?.ToString()",
                 "cb_chatmessageid"  : "00000000-0000-0000-0000-000000000000",
                 "userName" : "" ,
                 "createdon" :'@DateTime.UtcNow.ToString("yyyy-MM-ddThh:mm:ssZ")'
@@ -307,6 +307,7 @@
             const messageText = messageInput.value.trim();
 
             if (messageText) { 
+                debugger;
                 messageInput.value = '';
 
                 storeMessageToDatabase(messageText);

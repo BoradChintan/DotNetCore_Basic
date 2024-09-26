@@ -118,18 +118,12 @@ namespace DotNETBasic.Services
                     {
                         Console.WriteLine("Invalid message format.");
                     }
-
                     result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-
                 }
                 catch (Exception e)
                 {
-
                     throw e;
                 }
-
-
-               
             }
 
             // Remove the WebSocket when it closes
